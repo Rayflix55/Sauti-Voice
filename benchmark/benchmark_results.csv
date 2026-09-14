@@ -1,0 +1,19 @@
+filename,model,wer,entity_match_rate,latency_ms
+clip_01_alaba_burglary.wav,"Sahara (Intron)",0,1,1380
+clip_01_alaba_burglary.wav,"OpenAI Whisper",0.2083,0.75,2240
+clip_01_alaba_burglary.wav,"Google STT",0.3333,0.25,1890
+clip_02_yoruba_domestic.wav,"Sahara (Intron)",0,1,1420
+clip_02_yoruba_domestic.wav,"OpenAI Whisper",0.7368,0,2450
+clip_02_yoruba_domestic.wav,"Google STT",1,0,2010
+clip_03_corner_shop_debt.wav,"Sahara (Intron)",0,1,1290
+clip_03_corner_shop_debt.wav,"OpenAI Whisper",0.25,1,2120
+clip_03_corner_shop_debt.wav,"Google STT",0.25,1,1750
+clip_04_ojuelegba_traffic.wav,"Sahara (Intron)",0,1,1350
+clip_04_ojuelegba_traffic.wav,"OpenAI Whisper",0.25,0.6667,2310
+clip_04_ojuelegba_traffic.wav,"Google STT",0.65,0.3333,1820
+clip_05_stolen_vehicle.wav,"Sahara (Intron)",0,1,1450
+clip_05_stolen_vehicle.wav,"OpenAI Whisper",0.8333,0.3333,2510
+clip_05_stolen_vehicle.wav,"Google STT",0.8889,0.3333,1980
+clip_06_landlord_eviction.wav,"Sahara (Intron)",0,1,1280
+clip_06_landlord_eviction.wav,"OpenAI Whisper",0,1,1950
+clip_06_landlord_eviction.wav,"Google STT",0,1,1650

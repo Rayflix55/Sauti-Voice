@@ -1,0 +1,10 @@
+{
+  "name": "Sauti",
+  "description": "Voice-first citizen complaint intake tool for code-switched legal statement structuring",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

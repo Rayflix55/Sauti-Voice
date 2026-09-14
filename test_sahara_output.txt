@@ -1,0 +1,10 @@
+=== Sauti Sahara STT API Isolation Test (Step 2) ===
+Testing Sahara transcription endpoint integration...
+Audio buffer prepared (1644 bytes, 16kHz PCM).
+Checking SAHARA_API_KEY: Present (live endpoint call)
+[ERROR] Sahara transcription test failed: Error: Error calling Sahara STT API: Sahara API returned status 400: {"data":{},"message":"audio file duration of 0seconds is less than minimum of 1seconds required for processing","status":"Error"}
+
+    at transcribeWithSahara (C:\Users\rayfl\OneDrive\Documents\Software_Development\sauti\server\sahara.ts:66:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async main (C:\Users\rayfl\OneDrive\Documents\Software_Development\sauti\scripts\test_sahara.ts:28:18)
+Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76

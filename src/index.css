@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+:root {
+  --copper-1: #3a1710;
+  --copper-2: #7a2f1c;
+  --copper-3: #c65a34;
+  --ember: #e87a45;
+  --cream: #f6f1ea;
+  --ink: #171310;
+  --pink: #f3d9d6;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #0d0705;
+  color: var(--cream);
+}
+
+.font-sora {
+  font-family: 'Sora', sans-serif;
+}
+
+.font-inter {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Custom scrollbars for clean in-app screens */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(23, 19, 16, 0.05);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(198, 90, 52, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(198, 90, 52, 0.6);
+}
