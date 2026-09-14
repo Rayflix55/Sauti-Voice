@@ -84,6 +84,8 @@ export async function runBenchmark(
           transcript = await transcribeWithWhisper(audioBuffer);
           latency = Date.now() - start;
         } catch (err) {
+          console.error("Whisper HF fetch full error:", err);
+          console.error("Error cause:", (err as any)?.cause);
           throw new Error(
             `Whisper HF transcription failed for ${clip.filename}: ${err instanceof Error ? err.message : String(err)}`,
           );
@@ -226,8 +228,15 @@ async function transcribeWithWhisper(audioBuffer: Buffer): Promise<string> {
     );
   }
 
+  console.log(
+    "HF_API_TOKEN present:",
+    !!process.env.HF_API_TOKEN,
+    "length:",
+    process.env.HF_API_TOKEN?.length,
+  );
+
   const response = await fetch(
-    "https://api-inference.huggingface.co/models/openai/whisper-large-v3",
+    "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3",
     {
       method: "POST",
       headers: {
@@ -398,6 +407,8 @@ function benchmarkLanguageGroups(rows: BenchmarkRow[]): string {
 }
 
 async function main() {
+  const isValidationRun = process.argv.includes("--validation");
+
   console.log(
     "========================================================================",
   );
@@ -406,13 +417,15 @@ async function main() {
     " Sahara CodeSwitch Africa Challenge — Legal & Public Services Track",
   );
   console.log(
-    " Validation run: true, audio clips trimmed to first 170 seconds.",
+    isValidationRun
+      ? " Validation run: true, audio clips trimmed to first 170 seconds."
+      : " Validation run: false, full benchmark audio run.",
   );
   console.log(
     "========================================================================\n",
   );
 
-  const { rows, summaries } = await runBenchmark(undefined, true);
+  const { rows, summaries } = await runBenchmark(undefined, isValidationRun);
   console.log("### 1. Detailed Per-Clip Results Table\n");
   console.log(
     "| Filename | Language Group | Model | WER (%) | CER (%) | Entity Match Rate (%) | Latency (ms) |",
@@ -440,9 +453,7 @@ async function main() {
   );
 }
 
-if (process.argv[1] && process.argv[1].endsWith("run_benchmark.ts")) {
-  main().catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
-}
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

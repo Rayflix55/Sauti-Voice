@@ -1,0 +1,11 @@
+========================================================================
+ SAUTI BENCHMARK RUNNER: Sahara ASR vs. Whisper HF vs. Vosk
+ Sahara CodeSwitch Africa Challenge — Legal & Public Services Track
+ Validation run: false, full benchmark audio run.
+========================================================================
+
+[Sahara request payload] {"audio_file_name":"complaint_audio.wav","audio_file_blob":"<binary WAV bytes>","use_language_asr_input":"sw"}
+Error: Whisper HF transcription failed for swahili-3.wav: fetch failed
+    at runBenchmark (C:\Users\rayfl\OneDrive\Documents\Software_Development\sauti\benchmark\run_benchmark.ts:87:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async main (C:\Users\rayfl\OneDrive\Documents\Software_Development\sauti\benchmark\run_benchmark.ts:419:31)

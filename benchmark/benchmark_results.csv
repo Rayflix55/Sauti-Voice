@@ -1,19 +1,34 @@
-filename,model,wer,entity_match_rate,latency_ms
-clip_01_alaba_burglary.wav,"Sahara (Intron)",0,1,1380
-clip_01_alaba_burglary.wav,"OpenAI Whisper",0.2083,0.75,2240
-clip_01_alaba_burglary.wav,"Google STT",0.3333,0.25,1890
-clip_02_yoruba_domestic.wav,"Sahara (Intron)",0,1,1420
-clip_02_yoruba_domestic.wav,"OpenAI Whisper",0.7368,0,2450
-clip_02_yoruba_domestic.wav,"Google STT",1,0,2010
-clip_03_corner_shop_debt.wav,"Sahara (Intron)",0,1,1290
-clip_03_corner_shop_debt.wav,"OpenAI Whisper",0.25,1,2120
-clip_03_corner_shop_debt.wav,"Google STT",0.25,1,1750
-clip_04_ojuelegba_traffic.wav,"Sahara (Intron)",0,1,1350
-clip_04_ojuelegba_traffic.wav,"OpenAI Whisper",0.25,0.6667,2310
-clip_04_ojuelegba_traffic.wav,"Google STT",0.65,0.3333,1820
-clip_05_stolen_vehicle.wav,"Sahara (Intron)",0,1,1450
-clip_05_stolen_vehicle.wav,"OpenAI Whisper",0.8333,0.3333,2510
-clip_05_stolen_vehicle.wav,"Google STT",0.8889,0.3333,1980
-clip_06_landlord_eviction.wav,"Sahara (Intron)",0,1,1280
-clip_06_landlord_eviction.wav,"OpenAI Whisper",0,1,1950
-clip_06_landlord_eviction.wav,"Google STT",0,1,1650
+filename,model,wer,cer,entity_match_rate,latency_ms,language_group
+swahili-3.wav,Sahara (Intron),0.251,0.1572,0.2,6543,Swahili-English
+swahili-3.wav,Whisper (HF openai/whisper-large-v3),0.83,0.5997,0.6,33863,Swahili-English
+swahili-3.wav,Vosk (offline),0.9798,0.567,0,21318,Swahili-English
+swahili-2.wav,Sahara (Intron),0.2325,0.1308,0.4,7550,Swahili-English
+swahili-2.wav,Whisper (HF openai/whisper-large-v3),0.5055,0.3995,0.2,21960,Swahili-English
+swahili-2.wav,Vosk (offline),0.8192,0.4931,0,38424,Swahili-English
+swahili-1.wav,Sahara (Intron),0.168,0.0803,0,5847,Swahili-English
+swahili-1.wav,Whisper (HF openai/whisper-large-v3),0.568,0.3247,0,36260,Swahili-English
+swahili-1.wav,Vosk (offline),0.924,0.5434,0,35348,Swahili-English
+hausa-3.wav,Sahara (Intron),0.5498,0.3202,0.5,14985,Hausa-English
+hausa-3.wav,Whisper (HF openai/whisper-large-v3),0.8294,0.5126,0.5,14498,Hausa-English
+hausa-3.wav,Vosk (offline),0.9953,0.6568,0,26796,Hausa-English
+hausa-2.wav,Sahara (Intron),0.4312,0.2025,0.5,8233,Hausa-English
+hausa-2.wav,Whisper (HF openai/whisper-large-v3),0.9819,0.7051,0,28358,Hausa-English
+hausa-2.wav,Vosk (offline),1,0.6567,0,36507,Hausa-English
+hausa-1.wav,Sahara (Intron),0.625,0.4237,0,5660,Hausa-English
+hausa-1.wav,Whisper (HF openai/whisper-large-v3),0.8009,0.4953,0,18133,Hausa-English
+hausa-1.wav,Vosk (offline),0.9861,0.6999,0,24848,Hausa-English
+yoruba-3.wav,Sahara (Intron),0.6453,0.4492,0,16466,Yoruba-English
+yoruba-3.wav,Whisper (HF openai/whisper-large-v3),0.5099,0.3858,0.25,21500,Yoruba-English
+yoruba-3.wav,Vosk (offline),0.9335,0.6939,0,54026,Yoruba-English
+yoruba-2.wav,Sahara (Intron),0.7167,0.5309,0,10982,Yoruba-English
+yoruba-2.wav,Whisper (HF openai/whisper-large-v3),0.6872,0.4916,0.25,26600,Yoruba-English
+yoruba-2.wav,Vosk (offline),0.9113,0.719,0,48743,Yoruba-English
+yoruba-1.wav,Sahara (Intron),0.6414,0.4767,0,6638,Yoruba-English
+yoruba-1.wav,Whisper (HF openai/whisper-large-v3),0.7197,0.5828,0.3333,18968,Yoruba-English
+yoruba-1.wav,Vosk (offline),0.8763,0.688,0,26969,Yoruba-English
+pidgin-3.wav,Sahara (Intron),0.2778,0.1997,0.5,16983,Pidgin-English
+pidgin-3.wav,Whisper (HF openai/whisper-large-v3),0.3836,0.3191,0.25,19415,Pidgin-English
+pidgin-3.wav,Vosk (offline),0.6217,0.4022,0,19629,Pidgin-English
+pidgin-1.wav,Sahara (Intron),0.271,0.1927,0,7357,Pidgin-English
+pidgin-1.wav,Whisper (HF openai/whisper-large-v3),0.5585,0.4265,0,25344,Pidgin-English
+pidgin-1.wav,Vosk (offline),0.8029,0.6087,0,24081,Pidgin-English
