@@ -38,7 +38,7 @@ export interface LlmProviderResult {
 
 /** A statement-structuring provider. */
 export interface LlmProvider {
-  readonly name: "gemini";
+  readonly name: "gemini" | "huggingface";
   readonly model: string;
   /** True when a usable API key is present in the environment. */
   readonly isConfigured: boolean;

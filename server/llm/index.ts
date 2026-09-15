@@ -10,7 +10,7 @@
  */
 import type { StructuredStatement, StructuringMeta } from "../../src/types.js";
 import { resolveLlmConfig } from "./config.js";
-import { createGeminiProvider } from "./gemini.js";
+import { createHuggingFaceProvider } from "./huggingface.js";
 import { heuristicStructureComplaint } from "./heuristic.js";
 import { validateTranscript } from "./prompt.js";
 import {
@@ -32,29 +32,28 @@ export interface StructureOptions {
 }
 
 export interface LlmStatus {
-  provider: "gemini";
+  provider: "huggingface";
   model: string;
   configured: boolean;
   apiKeySource: string | null;
   fallbackToHeuristic: boolean;
-  tier: "google-ai-studio-free";
+  tier: "huggingface-free";
 }
 
 /** What the server would do right now — used by /api/health and the UI banner. */
 export function describeLlm(): LlmStatus {
-  const config = resolveLlmConfig();
   return {
-    provider: "gemini",
-    model: config.model,
-    configured: Boolean(config.apiKey),
-    apiKeySource: config.apiKeySource,
-    fallbackToHeuristic: config.fallbackToHeuristic,
-    tier: "google-ai-studio-free",
+    provider: "huggingface",
+    model: "meta-llama/Llama-3.1-8B-Instruct",
+    configured: Boolean(process.env.HF_API_TOKEN),
+    apiKeySource: process.env.HF_API_TOKEN ? "HF_API_TOKEN" : null,
+    fallbackToHeuristic: true,
+    tier: "huggingface-free",
   };
 }
 
 function resolveProvider(modelOverride?: string): LlmProvider {
-  return createGeminiProvider(modelOverride);
+  return createHuggingFaceProvider(modelOverride);
 }
 
 function offlineMeta(
