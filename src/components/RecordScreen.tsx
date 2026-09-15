@@ -1,26 +1,49 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Square, Play, Pause, Upload, Sparkles, CheckCircle2, AlertTriangle, Shield, Volume2, ArrowRight } from 'lucide-react';
-import { SAMPLE_NARRATIVES, SampleNarrative } from '../data/sampleNarratives.js';
-import { StatementItem, StatementSchema } from '../types.js';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Mic,
+  Square,
+  Play,
+  Pause,
+  Upload,
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  Shield,
+  Volume2,
+  ArrowRight,
+} from "lucide-react";
+import {
+  SAMPLE_NARRATIVES,
+  SampleNarrative,
+} from "../data/sampleNarratives.js";
+import { StatementItem, StatementSchema } from "../types.js";
 
 interface RecordScreenProps {
   onStatementCreated: (newStatement: StatementItem) => void;
 }
 
-export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }) => {
+export const RecordScreen: React.FC<RecordScreenProps> = ({
+  onStatementCreated,
+}) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [consentToStore, setConsentToStore] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<'auto' | 'yoruba-english' | 'pcm-english' | 'english'>('auto');
-  const [selectedSample, setSelectedSample] = useState<SampleNarrative | null>(null);
-  const [complainantInput, setComplainantInput] = useState('');
-  
+  const [selectedLanguage, setSelectedLanguage] = useState<
+    "auto" | "yoruba-english" | "pcm-english" | "english"
+  >("auto");
+  const [selectedSample, setSelectedSample] = useState<SampleNarrative | null>(
+    null,
+  );
+  const [complainantInput, setComplainantInput] = useState("");
+
   // Pipeline status
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingStage, setProcessingStage] = useState<'idle' | 'transcribing' | 'structuring' | 'complete'>('idle');
+  const [processingStage, setProcessingStage] = useState<
+    "idle" | "transcribing" | "structuring" | "complete"
+  >("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Audio recording refs
@@ -58,7 +81,9 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/webm",
+        });
         setAudioBlob(audioBlob);
         setAudioUrl(URL.createObjectURL(audioBlob));
         // Stop all tracks to release mic
@@ -70,8 +95,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
       setIsPaused(false);
       setRecordingSeconds(0);
     } catch (err: any) {
-      console.error('Error accessing microphone:', err);
-      setErrorMessage('Microphone access was denied or not supported. You can still test with preset audio clips or upload a file.');
+      console.error("Error accessing microphone:", err);
+      setErrorMessage(
+        "Microphone access was denied or not supported. You can still test with preset audio clips or upload a file.",
+      );
     }
   };
 
@@ -117,7 +144,9 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
   // Run the full Pipeline: Transcribe -> Structure -> Create Statement
   const processIntake = async () => {
     if (!audioBlob && !selectedSample) {
-      setErrorMessage('Please record your voice, upload an audio clip, or select a sample report to begin.');
+      setErrorMessage(
+        "Please record your voice, upload an audio clip, or select a sample report to begin.",
+      );
       return;
     }
 
@@ -125,21 +154,25 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
     setErrorMessage(null);
 
     try {
-      let rawTranscript = '';
-      let detectedLang: 'Yoruba–English' | 'Pidgin–English' | 'English' | 'Other' = 'English';
+      let rawTranscript = "";
+      let detectedLang:
+        | "Yoruba–English"
+        | "Pidgin–English"
+        | "English"
+        | "Other" = "English";
       let latencyMs = 1350;
 
       // 1. Transcription step
-      setProcessingStage('transcribing');
+      setProcessingStage("transcribing");
 
       if (selectedSample) {
         // Preset sample transcript
         rawTranscript = selectedSample.transcript;
         detectedLang = selectedSample.language as any;
         // Call transcribe endpoint with fallback_text
-        const res = await fetch('/api/transcribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/transcribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fallback_text: rawTranscript,
             language_hint: selectedLanguage,
@@ -156,51 +189,55 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
         });
         const base64Data = await base64Promise;
 
-        const res = await fetch('/api/transcribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/transcribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             audio_base64: base64Data,
-            mime_type: audioBlob.type || 'audio/wav',
-            language_hint: selectedLanguage !== 'auto' ? selectedLanguage : undefined,
+            mime_type: audioBlob.type || "audio/wav",
+            language_hint:
+              selectedLanguage !== "auto" ? selectedLanguage : undefined,
           }),
         });
 
         if (!res.ok) {
-          throw new Error('Transcription service encountered an error.');
+          throw new Error("Transcription service encountered an error.");
         }
 
         const data = await res.json();
-        rawTranscript = data.transcript || 'Spoken complaint received and processed via Sahara engine.';
-        detectedLang = data.language_detected || 'Pidgin–English';
+        rawTranscript =
+          data.transcript ||
+          "Spoken complaint received and processed via Sahara engine.";
+        detectedLang = data.language_detected || "Pidgin–English";
         latencyMs = data.latency_ms || 1400;
       }
 
       // 2. Structuring step via LLM
-      setProcessingStage('structuring');
-      const structRes = await fetch('/api/structure', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      setProcessingStage("structuring");
+      const structRes = await fetch("/api/structure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript: rawTranscript }),
       });
 
       if (!structRes.ok) {
-        throw new Error('LLM statement structuring failed.');
+        throw new Error("LLM statement structuring failed.");
       }
 
       const structuredSchema: StatementSchema = await structRes.json();
-      setProcessingStage('complete');
+      setProcessingStage("complete");
 
       // Generate case ID
       const randomId = Math.floor(1000 + Math.random() * 9000);
-      const caseNumber = `CR-${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${randomId}`;
+      const caseNumber = `CR-${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, "0")}/${randomId}`;
 
       const newStatement: StatementItem = {
         id: `stmt-${Date.now()}`,
         case_number: caseNumber,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        complainant_name: complainantInput.trim() || structuredSchema.complainant_name,
+        complainant_name:
+          complainantInput.trim() || structuredSchema.complainant_name,
         incident_datetime: structuredSchema.incident_datetime,
         location: structuredSchema.location,
         narrative: structuredSchema.narrative,
@@ -209,13 +246,14 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
         missing_fields: structuredSchema.missing_fields || [],
         language_detected: detectedLang as any,
         raw_transcript: rawTranscript,
-        status: 'draft',
-        officer_notes: structuredSchema.missing_fields.length > 0 
-          ? `Pending verification: ${structuredSchema.missing_fields.join('; ')}`
-          : 'First-mile verbal testimony structured and ready for officer sign-off.',
+        status: "draft",
+        officer_notes:
+          structuredSchema.missing_fields.length > 0
+            ? `Pending verification: ${structuredSchema.missing_fields.join("; ")}`
+            : "First-mile verbal testimony structured and ready for officer sign-off.",
         audio_duration: recordingSeconds || 16,
         confidence_score: 0.965,
-        asr_engine: 'Sahara ASR (Intron)',
+        asr_engine: "Sahara ASR (Intron)",
         consent_to_store: consentToStore,
       };
 
@@ -225,8 +263,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
         onStatementCreated(newStatement);
       }, 500);
     } catch (err: any) {
-      console.error('Intake processing error:', err);
-      setErrorMessage(err.message || 'Processing failed. Please check network and retry.');
+      console.error("Intake processing error:", err);
+      setErrorMessage(
+        err.message || "Processing failed. Please check network and retry.",
+      );
       setIsProcessing(false);
     }
   };
@@ -234,7 +274,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
     const remainder = secs % 60;
-    return `${String(mins).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+    return `${String(mins).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
   };
 
   return (
@@ -246,13 +286,15 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
           <span>•</span>
           <span>Sahara Speech-to-Text</span>
           <span>•</span>
-          <span>Claude/Gemini Structuring</span>
+          <span>Claude Structuring</span>
         </div>
         <h1 className="font-sora font-bold text-2xl sm:text-3xl text-[#171310] dark:text-[#f6f1ea]">
           Record Citizen Testimony
         </h1>
         <p className="text-sm text-[#171310]/70 dark:text-[#f6f1ea]/70 mt-1 max-w-2xl">
-          Capture spoken complaints in Nigerian Pidgin, Yoruba-English, or formal English. Sauti transcribes code-switched speech and builds a formal statement.
+          Capture spoken complaints in Nigerian Pidgin, Yoruba-English, or
+          formal English. Sauti transcribes code-switched speech and builds a
+          formal statement.
         </p>
       </div>
 
@@ -271,13 +313,18 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
             {/* Subtle glow background */}
             <div
               className="absolute -top-24 -right-24 w-72 h-72 rounded-full pointer-events-none opacity-20"
-              style={{ background: 'radial-gradient(circle, #e87a45 0%, transparent 70%)' }}
+              style={{
+                background:
+                  "radial-gradient(circle, #e87a45 0%, transparent 70%)",
+              }}
             />
 
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#e87a45] animate-ping" />
-                <span className="text-xs font-medium text-[#f6f1ea]/70">Live Audio Input</span>
+                <span className="text-xs font-medium text-[#f6f1ea]/70">
+                  Live Audio Input
+                </span>
               </div>
               <div className="bg-[#f6f1ea] text-[#171310] px-2.5 py-1 rounded-full text-[10px] font-bold">
                 96% Sahara Accuracy
@@ -289,21 +336,27 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
               <div
                 className={`w-32 h-32 rounded-full border-4 flex flex-col items-center justify-center transition-all duration-300 relative ${
                   isRecording
-                    ? 'border-[#e87a45] shadow-[0_0_30px_rgba(232,122,69,0.35)] scale-105'
+                    ? "border-[#e87a45] shadow-[0_0_30px_rgba(232,122,69,0.35)] scale-105"
                     : audioBlob || selectedSample
-                    ? 'border-[#8fd6a8]'
-                    : 'border-white/15'
+                      ? "border-[#8fd6a8]"
+                      : "border-white/15"
                 }`}
               >
                 {isRecording ? (
                   <div className="text-center">
-                    <div className="text-xs text-[#e87a45] font-semibold animate-pulse">RECORDING</div>
-                    <div className="font-sora font-bold text-2xl mt-0.5">{formatTime(recordingSeconds)}</div>
+                    <div className="text-xs text-[#e87a45] font-semibold animate-pulse">
+                      RECORDING
+                    </div>
+                    <div className="font-sora font-bold text-2xl mt-0.5">
+                      {formatTime(recordingSeconds)}
+                    </div>
                   </div>
                 ) : audioBlob || selectedSample ? (
                   <div className="text-center">
                     <CheckCircle2 className="w-8 h-8 text-[#8fd6a8] mx-auto mb-1" />
-                    <div className="text-[11px] font-bold text-white">Audio Ready</div>
+                    <div className="text-[11px] font-bold text-white">
+                      Audio Ready
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center">
@@ -327,8 +380,12 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
               {/* Status / Selected sample label */}
               {selectedSample ? (
                 <div className="mt-4 text-center">
-                  <div className="text-xs font-semibold text-[#e87a45]">{selectedSample.title}</div>
-                  <div className="text-[11px] text-[#f6f1ea]/60 mt-0.5 max-w-sm">"{selectedSample.transcript}"</div>
+                  <div className="text-xs font-semibold text-[#e87a45]">
+                    {selectedSample.title}
+                  </div>
+                  <div className="text-[11px] text-[#f6f1ea]/60 mt-0.5 max-w-sm">
+                    "{selectedSample.transcript}"
+                  </div>
                 </div>
               ) : audioUrl ? (
                 <div className="mt-4 w-full max-w-xs">
@@ -336,7 +393,8 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
                 </div>
               ) : (
                 <div className="mt-4 text-xs text-[#f6f1ea]/50 text-center">
-                  Speak clearly into the microphone in Yoruba, Pidgin, or English
+                  Speak clearly into the microphone in Yoruba, Pidgin, or
+                  English
                 </div>
               )}
             </div>
@@ -357,9 +415,13 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
                   <button
                     onClick={togglePauseRecording}
                     className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-colors cursor-pointer"
-                    title={isPaused ? 'Resume' : 'Pause'}
+                    title={isPaused ? "Resume" : "Pause"}
                   >
-                    {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                    {isPaused ? (
+                      <Play className="w-4 h-4" />
+                    ) : (
+                      <Pause className="w-4 h-4" />
+                    )}
                   </button>
                   <button
                     onClick={stopRecording}
@@ -387,7 +449,9 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
             {/* Language & Consent Controls */}
             <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <label className="block text-[#f6f1ea]/70 mb-1 font-medium">Target Language Mix:</label>
+                <label className="block text-[#f6f1ea]/70 mb-1 font-medium">
+                  Target Language Mix:
+                </label>
                 <select
                   value={selectedLanguage}
                   onChange={(e) => setSelectedLanguage(e.target.value as any)}
@@ -401,7 +465,9 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
               </div>
 
               <div>
-                <label className="block text-[#f6f1ea]/70 mb-1 font-medium">Complainant Name (Optional):</label>
+                <label className="block text-[#f6f1ea]/70 mb-1 font-medium">
+                  Complainant Name (Optional):
+                </label>
                 <input
                   type="text"
                   placeholder="e.g. Amaka Okafor"
@@ -423,7 +489,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
                   className="rounded text-[#e87a45] focus:ring-[#e87a45]"
                 />
                 <span>
-                  <strong>Citizen Consent:</strong> Complainant consented to audio retention for benchmark research. (Default unchecked: audio is discarded immediately post-processing per ethics protocol).
+                  <strong>Citizen Consent:</strong> Complainant consented to
+                  audio retention for benchmark research. (Default unchecked:
+                  audio is discarded immediately post-processing per ethics
+                  protocol).
                 </span>
               </label>
             </div>
@@ -435,19 +504,19 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
                 disabled={isProcessing || (!audioBlob && !selectedSample)}
                 className={`w-full py-3.5 rounded-full font-semibold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   audioBlob || selectedSample
-                    ? 'bg-[#e87a45] hover:bg-[#c65a34] text-white shadow-xl hover:scale-[1.01]'
-                    : 'bg-white/10 text-white/40 cursor-not-allowed'
+                    ? "bg-[#e87a45] hover:bg-[#c65a34] text-white shadow-xl hover:scale-[1.01]"
+                    : "bg-white/10 text-white/40 cursor-not-allowed"
                 }`}
               >
                 {isProcessing ? (
                   <>
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     <span>
-                      {processingStage === 'transcribing'
-                        ? 'Transcribing with Sahara ASR...'
-                        : processingStage === 'structuring'
-                        ? 'Structuring Statement with LLM...'
-                        : 'Finalizing Statement...'}
+                      {processingStage === "transcribing"
+                        ? "Transcribing with Sahara ASR..."
+                        : processingStage === "structuring"
+                          ? "Structuring Statement with LLM..."
+                          : "Finalizing Statement..."}
                     </span>
                   </>
                 ) : (
@@ -474,7 +543,8 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
               </span>
             </div>
             <p className="text-xs text-[#171310]/70 dark:text-[#f6f1ea]/70 mb-4 leading-relaxed">
-              Select one of the official benchmark incident reports from the challenge brief to test the code-switching pipeline immediately:
+              Select one of the official benchmark incident reports from the
+              challenge brief to test the code-switching pipeline immediately:
             </p>
 
             <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
@@ -486,8 +556,8 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
                     onClick={() => handleSelectSample(sample)}
                     className={`p-3 rounded-2xl border transition-all cursor-pointer text-left ${
                       isSelected
-                        ? 'bg-[#c65a34]/10 border-[#c65a34] shadow-sm'
-                        : 'bg-[#f6f1ea]/40 dark:bg-white/[0.04] border-black/5 dark:border-white/5 hover:border-[#c65a34]/40'
+                        ? "bg-[#c65a34]/10 border-[#c65a34] shadow-sm"
+                        : "bg-[#f6f1ea]/40 dark:bg-white/[0.04] border-black/5 dark:border-white/5 hover:border-[#c65a34]/40"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
@@ -496,11 +566,11 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
                       </span>
                       <span
                         className={`text-[8px] font-bold px-2 py-0.5 rounded-full ${
-                          sample.language === 'Yoruba–English'
-                            ? 'bg-[#f3d9d6] text-[#8a3a2a]'
-                            : sample.language === 'Pidgin–English'
-                            ? 'bg-[#e4e9d8] text-[#4c5a2f]'
-                            : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200'
+                          sample.language === "Yoruba–English"
+                            ? "bg-[#f3d9d6] text-[#8a3a2a]"
+                            : sample.language === "Pidgin–English"
+                              ? "bg-[#e4e9d8] text-[#4c5a2f]"
+                              : "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200"
                         }`}
                       >
                         {sample.language}
@@ -510,8 +580,15 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({ onStatementCreated }
                       "{sample.transcript}"
                     </div>
                     <div className="mt-2 flex items-center justify-between text-[9px] text-[#171310]/50 dark:text-[#f6f1ea]/50">
-                      <span>Entities: {sample.expectedEntities.slice(0, 2).join(', ')}...</span>
-                      {isSelected && <span className="text-[#c65a34] font-bold">Selected ✓</span>}
+                      <span>
+                        Entities:{" "}
+                        {sample.expectedEntities.slice(0, 2).join(", ")}...
+                      </span>
+                      {isSelected && (
+                        <span className="text-[#c65a34] font-bold">
+                          Selected ✓
+                        </span>
+                      )}
                     </div>
                   </div>
                 );

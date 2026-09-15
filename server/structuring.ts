@@ -1,17 +1,26 @@
-import { GoogleGenAI } from "@google/genai";
+import Anthropic from "@anthropic-ai/sdk";
 import { StatementSchema } from "../src/types.js";
 
-let aiClient: GoogleGenAI | null = null;
+let aiClient: Anthropic | null = null;
 
-function getAIClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
+function getAIClient(): Anthropic | null {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return null;
   }
   if (!aiClient) {
-    aiClient = new GoogleGenAI({ apiKey });
+    aiClient = new Anthropic({ apiKey });
   }
   return aiClient;
+}
+
+function extractTextFromResponse(
+  content: Array<{ type?: string; text?: string }>,
+) {
+  return content
+    .map((block) => (block.type === "text" ? (block.text ?? "") : ""))
+    .join("")
+    .trim();
 }
 
 export async function structureComplaintTranscript(
@@ -20,7 +29,7 @@ export async function structureComplaintTranscript(
   const ai = getAIClient();
   if (!ai) {
     throw new Error(
-      "GEMINI_API_KEY is not set. Gemini structuring needs a real API key.",
+      "ANTHROPIC_API_KEY is not set. Anthropic structuring needs a real API key.",
     );
   }
 
@@ -61,16 +70,23 @@ ${transcript}
 Return ONLY the raw JSON object conforming to the schema above, without markdown ticks or commentary.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.1,
-      },
+    console.log(
+      "ANTHROPIC_API_KEY present:",
+      !!process.env.ANTHROPIC_API_KEY,
+      "length:",
+      process.env.ANTHROPIC_API_KEY?.length,
+    );
+
+    const response = await ai.messages.create({
+      model: "claude-3-5-sonnet-20241022",
+      max_tokens: 1200,
+      temperature: 0.1,
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const text = response.text || "";
+    const text = extractTextFromResponse(
+      response.content as Array<{ type?: string; text?: string }>,
+    );
     const parsed = JSON.parse(text) as StatementSchema;
     return {
       complainant_name: parsed.complainant_name ?? null,
@@ -83,9 +99,11 @@ Return ONLY the raw JSON object conforming to the schema above, without markdown
         ? parsed.missing_fields
         : [],
     };
-  } catch (error) {
+  } catch (err) {
+    console.error("Anthropic structuring full error:", err);
+    console.error("Error cause:", (err as any)?.cause);
     throw new Error(
-      `Gemini structuring error: ${error instanceof Error ? error.message : String(error)}`,
+      `Anthropic structuring error: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 }

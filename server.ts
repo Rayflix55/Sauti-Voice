@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { transcribeWithSahara } from "./server/sahara.js";
 import { structureComplaintTranscript } from "./server/structuring.js";
+import { convertToSaharaWav } from "./server/audio.js";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env"), override: true });
 
@@ -21,7 +22,7 @@ app.get("/api/health", (req, res) => {
     sahara_configured: Boolean(
       process.env.SAHARA_API_KEY || process.env.INTRON_API_KEY,
     ),
-    gemini_configured: Boolean(process.env.GEMINI_API_KEY),
+    anthropic_configured: Boolean(process.env.ANTHROPIC_API_KEY),
     timestamp: new Date().toISOString(),
   });
 });
@@ -65,13 +66,18 @@ app.post("/api/transcribe", async (req, res) => {
         .json({ error: "Missing audio_base64 or fallback_text" });
     }
 
-    // Convert base64 to buffer
-    const base64Data = audio_base64.replace(/^data:audio\/\w+;base64,/, "");
+    const base64Data = audio_base64.replace(/^data:[^;]+;base64,/, "");
     const audioBuffer = Buffer.from(base64Data, "base64");
+    const sourceMimeType = mime_type || "audio/wav";
+    const wavBuffer = await convertToSaharaWav(audioBuffer, sourceMimeType);
+
+    console.log(
+      `[Transcription audio] converted ${sourceMimeType} (${audioBuffer.length} bytes) to audio/wav (${wavBuffer.length} bytes)`,
+    );
 
     const result = await transcribeWithSahara(
-      audioBuffer,
-      mime_type || "audio/wav",
+      wavBuffer,
+      "audio/wav",
       language_hint,
     );
     return res.json(result);
