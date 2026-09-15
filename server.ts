@@ -3,10 +3,17 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { transcribeWithSahara } from "./server/sahara.js";
-import { structureComplaintTranscript } from "./server/structuring.js";
+import { describeLlm, structureTranscript } from "./server/structuring.js";
 import { convertToSaharaWav } from "./server/audio.js";
 
-dotenv.config({ path: path.resolve(process.cwd(), ".env"), override: true });
+// .env.local wins over .env so the AI Studio-managed key is never shadowed.
+dotenv.config({
+  path: [
+    path.resolve(process.cwd(), ".env.local"),
+    path.resolve(process.cwd(), ".env"),
+  ],
+  override: true,
+});
 
 const app = express();
 const PORT = 3000;
@@ -15,14 +22,23 @@ const PORT = 3000;
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// 1. Health check endpoint
-app.get("/api/health", (req, res) => {
+// 1. Health check endpoint — reports which engines are live vs degraded.
+app.get("/api/health", (_req, res) => {
+  const llm = describeLlm();
   res.json({
     status: "ok",
     sahara_configured: Boolean(
       process.env.SAHARA_API_KEY || process.env.INTRON_API_KEY,
     ),
-    anthropic_configured: Boolean(process.env.ANTHROPIC_API_KEY),
+    llm: {
+      provider: llm.provider,
+      model: llm.model,
+      // false means every statement is structured by the offline heuristic.
+      api_key_configured: llm.configured,
+      api_key_source: llm.apiKeySource,
+      tier: llm.tier,
+      fallback_to_heuristic: llm.fallbackToHeuristic,
+    },
     timestamp: new Date().toISOString(),
   });
 });
@@ -89,21 +105,35 @@ app.post("/api/transcribe", async (req, res) => {
   }
 });
 
-// 3. Structuring endpoint
+// 3. Structuring endpoint (free-tier Gemini, with offline fallback)
+// Returns the StatementSchema fields plus an `llm` provenance block describing
+// which model answered and, if it did not, why it was skipped.
 app.post("/api/structure", async (req, res) => {
   try {
-    const { transcript } = req.body;
+    const { transcript, strict, model } = req.body ?? {};
     if (!transcript || typeof transcript !== "string") {
       return res.status(400).json({ error: "Missing transcript string" });
     }
 
-    const structured = await structureComplaintTranscript(transcript);
+    const structured = await structureTranscript(transcript, {
+      strict: strict === true,
+      model: typeof model === "string" ? model : undefined,
+    });
     return res.json(structured);
   } catch (error: any) {
+    const status =
+      error?.code === "llm_not_configured"
+        ? 503
+        : error?.code === "llm_input_error"
+          ? 400
+          : error?.status === 429
+            ? 429
+            : 500;
     console.error("Structuring error:", error);
-    return res
-      .status(500)
-      .json({ error: error?.message || "Failed to structure transcript" });
+    return res.status(status).json({
+      error: error?.message || "Failed to structure transcript",
+      code: error?.code ?? "structuring_failed",
+    });
   }
 });
 
