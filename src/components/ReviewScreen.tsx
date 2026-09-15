@@ -366,6 +366,12 @@ export const ReviewScreen: React.FC<ReviewScreenProps> = ({
                   <span>Language: {formData.language_detected}</span>
                   <span>Confidence: {(formData.confidence_score || 0.96) * 100}%</span>
                   <span>Engine: {formData.asr_engine || 'Sahara (Intron)'}</span>
+                  <span>
+                    Structured by:{' '}
+                    {formData.llm_engine === 'offline-heuristic'
+                      ? 'Offline parser'
+                      : formData.llm_model || 'Gemini'}
+                  </span>
                 </div>
               </div>
             )}

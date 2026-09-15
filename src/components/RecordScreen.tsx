@@ -11,12 +11,32 @@ import {
   Shield,
   Volume2,
   ArrowRight,
+  Info,
 } from "lucide-react";
 import {
   SAMPLE_NARRATIVES,
   SampleNarrative,
 } from "../data/sampleNarratives.js";
-import { StatementItem, StatementSchema } from "../types.js";
+import {
+  StatementItem,
+  StructuredStatement,
+  StructuringMeta,
+} from "../types.js";
+
+const prettifyModel = (model?: string) =>
+  model
+    ? model
+        .replace(/^gemini-/i, "Gemini ")
+        .replace(/[-_]/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+        .replace(/Flash|Lite|Pro/gi, (m) => m.toUpperCase())
+    : "Gemini";
+
+const llmBannerLabel = (status: { model: string; api_key_configured: boolean } | null) => {
+  if (!status) return "Gemini Structuring";
+  if (!status.api_key_configured) return "Offline Structuring";
+  return `${prettifyModel(status.model)} Structuring`;
+};
 
 interface RecordScreenProps {
   onStatementCreated: (newStatement: StatementItem) => void;
@@ -45,6 +65,31 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
     "idle" | "transcribing" | "structuring" | "complete"
   >("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Which structuring engine the server is actually running (Gemini free tier,
+  // or the offline heuristic when no key is configured).
+  const [llmStatus, setLlmStatus] = useState<{
+    provider: string;
+    model: string;
+    api_key_configured: boolean;
+  } | null>(null);
+  const [lastStructuring, setLastStructuring] =
+    useState<StructuringMeta | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/health")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.llm) setLlmStatus(data.llm);
+      })
+      .catch(() => {
+        /* banner falls back to its default label */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Audio recording refs
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -221,10 +266,14 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       });
 
       if (!structRes.ok) {
-        throw new Error("LLM statement structuring failed.");
+        const detail = await structRes.json().catch(() => null);
+        throw new Error(
+          detail?.error ?? "Statement structuring failed. Please retry.",
+        );
       }
 
-      const structuredSchema: StatementSchema = await structRes.json();
+      const structuredSchema: StructuredStatement = await structRes.json();
+      setLastStructuring(structuredSchema.llm ?? null);
       setProcessingStage("complete");
 
       // Generate case ID
@@ -247,13 +296,26 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
         language_detected: detectedLang as any,
         raw_transcript: rawTranscript,
         status: "draft",
-        officer_notes:
+        officer_notes: [
           structuredSchema.missing_fields.length > 0
             ? `Pending verification: ${structuredSchema.missing_fields.join("; ")}`
             : "First-mile verbal testimony structured and ready for officer sign-off.",
+          structuredSchema.llm?.structured_by === "offline-heuristic"
+            ? `Structured without the Gemini API${
+                structuredSchema.llm.fallback_reason
+                  ? ` (${structuredSchema.llm.fallback_reason})`
+                  : ""
+              } — verify every field before sign-off.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(" "),
         audio_duration: recordingSeconds || 16,
         confidence_score: 0.965,
         asr_engine: "Sahara ASR (Intron)",
+        llm_engine: structuredSchema.llm?.structured_by,
+        llm_model: structuredSchema.llm?.model,
+        llm_fallback_reason: structuredSchema.llm?.fallback_reason ?? null,
         consent_to_store: consentToStore,
       };
 
@@ -286,7 +348,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
           <span>•</span>
           <span>Sahara Speech-to-Text</span>
           <span>•</span>
-          <span>Claude Structuring</span>
+          <span>{llmBannerLabel(llmStatus)}</span>
         </div>
         <h1 className="font-sora font-bold text-2xl sm:text-3xl text-[#171310] dark:text-[#f6f1ea]">
           Record Citizen Testimony
@@ -302,6 +364,19 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
         <div className="mb-6 bg-[#f3d9d6] border border-[#c65a34]/30 text-[#3a1710] px-4 py-3 rounded-xl flex items-start gap-3 text-sm">
           <AlertTriangle className="w-5 h-5 text-[#c65a34] flex-none mt-0.5" />
           <div>{errorMessage}</div>
+        </div>
+      )}
+
+      {!errorMessage && lastStructuring?.structured_by === "offline-heuristic" && (
+        <div className="mb-6 bg-[#fdf3e3] border border-[#c65a34]/20 text-[#5a3a1a] px-4 py-3 rounded-xl flex items-start gap-3 text-xs leading-relaxed">
+          <Info className="w-4 h-4 text-[#c65a34] flex-none mt-0.5" />
+          <div>
+            <strong className="font-semibold">Structured offline.</strong>{" "}
+            {lastStructuring.fallback_reason ??
+              "The Gemini API was unavailable, so the statement was built by Sauti's local parser."}{" "}
+            The complaint was still filed — check the narrative and the flagged
+            fields before sign-off.
+          </div>
         </div>
       )}
 

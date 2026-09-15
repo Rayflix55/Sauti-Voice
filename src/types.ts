@@ -8,6 +8,32 @@ export interface StatementSchema {
   missing_fields: string[];
 }
 
+/** Which engine produced a structured statement: free-tier Gemini or the offline parser. */
+export type StructuringEngine = 'gemini' | 'offline-heuristic';
+
+/** Provenance for a structured statement, returned by POST /api/structure. */
+export interface StructuringMeta {
+  provider: StructuringEngine;
+  /** Model actually used — 'sauti-heuristic-v1' when structured offline. */
+  model: string;
+  /** Model the environment asked for, so the UI can explain a fallback. */
+  requested_model?: string;
+  structured_by: StructuringEngine;
+  latency_ms: number;
+  /** Why Gemini was skipped (no key / rate limited / bad output). Null when used. */
+  fallback_reason: string | null;
+  usage?: {
+    promptTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+  };
+}
+
+/** StatementSchema plus the LLM provenance block. */
+export interface StructuredStatement extends StatementSchema {
+  llm: StructuringMeta;
+}
+
 export interface StatementItem extends StatementSchema {
   id: string;
   case_number: string;
@@ -22,6 +48,9 @@ export interface StatementItem extends StatementSchema {
   audio_duration?: number;
   confidence_score?: number;
   asr_engine?: string;
+  llm_engine?: StructuringEngine;
+  llm_model?: string;
+  llm_fallback_reason?: string | null;
   consent_to_store?: boolean;
 }
 
